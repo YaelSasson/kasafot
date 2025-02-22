@@ -234,7 +234,7 @@
             const z = accel?.z || 0;
             
             // Calculate total acceleration
-            const totalAccel = Math.sqrt(y * y);
+            const totalAccel = Math.sqrt(x * x);
             
             // Show code and stop if threshold is exceeded
             if (totalAccel > threshold) {
