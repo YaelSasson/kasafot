@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ghost Weight Detector</title>
+    <style>
+        /* Previous styles remain the same */
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #000;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ghost {
+            position: absolute;
+            width: 40px;
+            height: 50px;
+            background: rgba(159, 253, 150, 0.4);
+            border-radius: 50% 50% 0 0;
+            animation: float 10s infinite;
+            opacity: 0;
+        }
+
+        .ghost::before {
+            content: '👻';
+            font-size: 30px;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            animation: glow 2s infinite;
+        }
+
+        .proton-beam {
+            position: fixed;
+            width: 3px;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent, #9ffd96);
+            animation: beam 4s infinite;
+            opacity: 0.6;
+        }
+
+        @keyframes glow {
+            0%, 100% { text-shadow: 0 0 10px #9ffd96; }
+            50% { text-shadow: 0 0 20px #9ffd96, 0 0 30px #9ffd96; }
+        }
+
+        @keyframes float {
+            0% { 
+                transform: translateY(100vh) translateX(-50px) scale(1);
+                opacity: 0;
+            }
+            20% { opacity: 0.8; }
+            80% { opacity: 0.8; }
+            100% { 
+                transform: translateY(-100vh) translateX(50px) scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        @keyframes beam {
+            0% { transform: translateX(-100vw) rotate(45deg); opacity: 0; }
+            50% { opacity: 0.6; }
+            100% { transform: translateX(100vw) rotate(45deg); opacity: 0; }
+        }
+
+        #initial-message {
+            font-size: 1.5em;
+            color: #9ffd96;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #9ffd96;
+            z-index: 1;
+        }
+
+        #message {
+            display: none;  /* Initially hidden */
+            font-size: 2em;
+            color: #9ffd96;
+            margin: 20px;
+            font-weight: bold;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(159, 253, 150, 0.3);
+            z-index: 1;
+            border: 2px solid #9ffd96;
+        }
+
+        #startButton {
+            padding: 20px 40px;
+            font-size: 1.5em;
+            margin: 20px;
+            background-color: #000;
+            color: #9ffd96;
+            border: 2px solid #9ffd96;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(159, 253, 150, 0.3);
+            z-index: 1;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        #startButton:hover {
+            background-color: #9ffd96;
+            color: #000;
+            box-shadow: 0 0 30px rgba(159, 253, 150, 0.6);
+            transform: scale(1.05);
+        }
+
+        #startButton:disabled {
+            background-color: #333;
+            border-color: #666;
+            color: #666;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .error {
+            color: #ff0000;
+            margin: 20px;
+            font-weight: bold;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: 1px solid #ff0000;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <div id="initial-message">Press Start</div>
+    <button id="startButton">Start</button>
+    <div id="message">not enough ghosts weight</div>
+
+    <script>
+        // Create ghost elements
+        function createGhosts() {
+            for (let i = 0; i < 10; i++) {
+                const ghost = document.createElement('div');
+                ghost.className = 'ghost';
+                ghost.style.left = `${Math.random() * 100}%`;
+                ghost.style.animationDelay = `${Math.random() * 10}s`;
+                document.body.appendChild(ghost);
+            }
+        }
+
+        // Create proton beams
+        function createProtonBeams() {
+            for (let i = 0; i < 5; i++) {
+                const beam = document.createElement('div');
+                beam.className = 'proton-beam';
+                beam.style.animationDelay = `${Math.random() * 4}s`;
+                beam.style.top = `${Math.random() * 100}%`;
+                document.body.appendChild(beam);
+            }
+        }
+
+        // Initialize animations
+        createGhosts();
+        createProtonBeams();
+
+        const message = document.getElementById('message');
+        const startButton = document.getElementById('startButton');
+        const threshold = 6;
+        
+        let isRunning = false;
+
+        function startMotionDetection() {
+            if (isRunning) return;
+            
+            function onSuccess() {
+                isRunning = true;
+                startButton.style.display = 'none';
+                document.getElementById('initial-message').style.display = 'none';
+                message.style.display = 'block'; // Show the message after start
+            }
+
+            // iOS permission request
+            if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                DeviceMotionEvent.requestPermission()
+                    .then(permission => {
+                        if (permission === 'granted') {
+                            onSuccess();
+                            setupMotionListener();
+                        } else {
+                            showError('Permission denied. Please enable motion sensors and reload.');
+                        }
+                    })
+                    .catch(error => {
+                        showError('Error requesting permission: ' + error.message);
+                    });
+            } else {
+                // Android and other devices
+                if (window.DeviceMotionEvent) {
+                    onSuccess();
+                    setupMotionListener();
+                } else {
+                    showError('Device motion not supported on this device.');
+                }
+            }
+        }
+
+        function showError(errorMessage) {
+            const error = document.createElement('div');
+            error.className = 'error';
+            error.textContent = errorMessage;
+            document.body.appendChild(error);
+            startButton.disabled = true;
+        }
+
+        function stopProgram() {
+            window.removeEventListener('devicemotion', motionHandler);
+            isRunning = false;
+        }
+
+        startButton.addEventListener('click', startMotionDetection);
+        
+        function motionHandler(event) {
+            // Get acceleration (excluding gravity for more accurate movement detection)
+            const accel = event.acceleration;
+            const x = accel?.x || 0;
+            const y = accel?.y || 0;
+            const z = accel?.z || 0;
+            
+            // Calculate total acceleration
+            const totalAccel = Math.sqrt(y * y);
+            
+            // Show code and stop if threshold is exceeded
+            if (totalAccel > threshold) {
+                message.textContent = 'the code is: 452';
+                stopProgram();
+            }
+        }
+
+        function setupMotionListener() {
+            window.addEventListener('devicemotion', motionHandler);
+        }
+    </script>
+</body>
+</html>
